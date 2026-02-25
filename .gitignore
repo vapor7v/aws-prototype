@@ -1,0 +1,22 @@
+# Project
+*.iml
+.idea/
+.gradle/
+build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Lambda
+lambda/**/__pycache__/
+lambda/**/*.pyc
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.log
+*.tmp
