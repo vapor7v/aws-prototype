@@ -59,7 +59,7 @@ class DesignViewModel : ViewModel() {
 
         for ((index, variation) in variations.withIndex()) {
             val (name, rotationOffset) = variation
-            val furniture = intent.objects.mapIndexed { i, obj ->
+            val furniture = intent.objects.orEmpty().mapIndexed { i, obj ->
                 PlacedItem(
                     itemId = "${obj.type}_${obj.style ?: "default"}_0$i",
                     positionX = (i - 1) * 1.5f,
@@ -70,7 +70,7 @@ class DesignViewModel : ViewModel() {
                 )
             }
 
-            val wallElements = intent.wallDecor.mapIndexed { i, decor ->
+            val wallElements = intent.wallDecor.orEmpty().mapIndexed { i, decor ->
                 PlacedWallItem(
                     itemId = "${decor.type}_${decor.style ?: "default"}_0$i",
                     wallId = "wall_${i % 2}",
@@ -88,11 +88,12 @@ class DesignViewModel : ViewModel() {
                     name = name,
                     furniture = furniture,
                     wallDesign = WallDesign(
-                        primaryColor = intent.wallTreatment.color,
-                        accentWall = intent.wallTreatment.accentWall?.let {
+                        primaryColor = intent.wallTreatment?.color ?: "#FFFFFF",
+
+                        accentWall = intent.wallTreatment?.accentWall?.let {
                             AccentWallDesign("wall_${it.wallIndex}", it.color)
                         },
-                        texture = intent.wallTreatment.texture
+                        texture = intent.wallTreatment?.texture ?: "matte"
                     ),
                     wallElements = wallElements,
                     scores = CandidateScores(),
@@ -119,7 +120,7 @@ class DesignViewModel : ViewModel() {
             val wallCohesion = 70f + (Math.random() * 20).toFloat()
             val lightingMatch = 65f + (Math.random() * 25).toFloat()
             val styleConsistency = 75f + (Math.random() * 20).toFloat()
-            val constraintSat = if (intent.constraints.budgetMax != null) 80f else 100f
+            val constraintSat = if (intent.constraints?.budgetMax != null) 80f else 100f
 
             val composite = (
                 colorHarmony * 0.20f +

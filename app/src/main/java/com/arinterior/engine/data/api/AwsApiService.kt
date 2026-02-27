@@ -9,13 +9,13 @@ import retrofit2.http.POST
  */
 interface AwsApiService {
 
-    @POST("/intent")
+    @POST("intent")
     suspend fun extractIntent(@Body request: IntentRequest): IntentResponse
 
-    @POST("/voice-cmd")
+    @POST("voice-cmd")
     suspend fun parseVoiceCommand(@Body request: VoiceCommandRequest): VoiceCommandResponse
 
-    @POST("/label")
+    @POST("label")
     suspend fun labelObject(@Body request: LabelRequest): LabelResponse
 }
 

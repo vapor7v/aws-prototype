@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &1
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3a1b40b1aab5c640a5b7faad02e2e10, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Keys:
+  - Android
+  m_Values:
+  - m_RequiresSettingsUpdate: 0
+    m_AutomaticLoading: 1
+    m_AutomaticRunning: 1
+    m_InitManagerOnStart: 1
+    m_Loaders:
+    - {fileID: 2}
+# ──────────────────────────────────────────────────────────────
+# ARCore Loader — enabled for Android
+# ──────────────────────────────────────────────────────────────
+--- !u!114 &2
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98735b2e4b9f7f048a70fc7f0864e0c1, type: 3}
+  m_Name: Google ARCore
+  m_EditorClassIdentifier: 
