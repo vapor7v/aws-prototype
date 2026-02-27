@@ -1,0 +1,93 @@
+# UAAL Migration — Complete Walkthrough
+
+## Round 1: Initial Bug Fixes (10)
+
+| # | File | Fix |
+|---|------|-----|
+| 1 | [app/libs/README.md](file:///c:/Users/apurv/Desktop/AWS%20Proto/app/libs/README.md) | Created dir + AAR export instructions |
+| 2 | [ARViewModel.kt](file:///c:/Users/apurv/Desktop/AWS%20Proto/app/src/main/java/com/arinterior/engine/viewmodel/ARViewModel.kt) | `candidateId` → [id](file:///c:/Users/apurv/Desktop/AWS%20Proto/app/src/main/java/com/arinterior/engine/unity/UnityARBridge.kt#188-195) |
+| 3 | [AndroidToUnityBridge.cs](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Scripts/Bridge/AndroidToUnityBridge.cs) | JNI callbacks now call Kotlin via `AndroidJavaClass` |
+| 4 | [UnityPlayerView.kt](file:///c:/Users/apurv/Desktop/AWS%20Proto/app/src/main/java/com/arinterior/engine/ui/components/UnityPlayerView.kt) | Rewritten — proper FrameLayout UAAL embedding |
+| 5 | [AndroidToUnityBridge.cs](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Scripts/Bridge/AndroidToUnityBridge.cs) | Methods accept `string` param for `UnitySendMessage` |
+| 6 | [MainActivity.kt](file:///c:/Users/apurv/Desktop/AWS%20Proto/app/src/main/java/com/arinterior/engine/MainActivity.kt) | Added Unity lifecycle forwarding |
+| 7 | [AndroidToUnityBridge.cs](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Scripts/Bridge/AndroidToUnityBridge.cs) | Stubs forward to SceneMutator/AutoSnapEngine |
+| 8 | [SceneMutator.cs](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Scripts/SceneManipulation/SceneMutator.cs) | Supports both JSON + pipe-delimited formats |
+| 9 | [ARSceneManager.cs](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Scripts/AR/ARSceneManager.cs) | Tap detection uses `Physics.Raycast` |
+| 10 | Both C# files | `CultureInfo.InvariantCulture` for float parsing |
+
+## Round 2: Full Codebase Review (6)
+
+| # | File | Fix |
+|---|------|-----|
+| 11 | [ARSceneManager.cs](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Scripts/AR/ARSceneManager.cs) | Removed fake `ARLightEstimation` |
+| 12 | [ARSceneManager.cs](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Scripts/AR/ARSceneManager.cs) | `planesChanged` → `trackablesChanged` |
+| 13 | [ARSceneManager.cs](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Scripts/AR/ARSceneManager.cs) | `AttachAnchor` → `AddComponent<ARAnchor>()` |
+| 14 | [ARSceneManager.cs](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Scripts/AR/ARSceneManager.cs) | Events relay to Android via `AndroidToUnityBridge.Send*()` |
+| 15 | [ARInteriorApp.kt](file:///c:/Users/apurv/Desktop/AWS%20Proto/app/src/main/java/com/arinterior/engine/ui/ARInteriorApp.kt) | Voice commands forwarded to Unity |
+| 16 | [settings.gradle.kts](file:///c:/Users/apurv/Desktop/AWS%20Proto/settings.gradle.kts) | `flatDir` for AAR resolution |
+
+## Round 3: Unity Project Structure (8 new files)
+
+| File | Purpose |
+|------|---------|
+| [Assets/Scenes/ARScene.unity](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Scenes/ARScene.unity) | AR Session + XR Origin + Camera + AndroidBridge + SceneManipulation |
+| [Assets/Settings/AR_URP_Asset.asset](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Settings/AR_URP_Asset.asset) | URP Pipeline Asset (mobile-tuned) |
+| [Assets/Settings/AR_URP_Renderer.asset](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Settings/AR_URP_Renderer.asset) | Forward Renderer + AR Background Renderer Feature |
+| `Assets/Prefabs/AR Plane.prefab` | Plane visualizer (MeshFilter + MeshRenderer + Collider) |
+| [ProjectSettings/XRGeneralSettingsPerBuildTarget.asset](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/ProjectSettings/XRGeneralSettingsPerBuildTarget.asset) | ARCore enabled for Android |
+| [ProjectSettings/QualitySettings.asset](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/ProjectSettings/QualitySettings.asset) | "AR Mobile" quality → URP |
+| [ProjectSettings/GraphicsSettings.asset](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/ProjectSettings/GraphicsSettings.asset) | Custom render pipeline → URP |
+| [Packages/manifest.json](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Packages/manifest.json) | Added `com.unity.xr.management: 4.4.0` |
+
+## Round 4: Web Research Fixes (5)
+
+Based on official Unity UAAL + AR Foundation documentation:
+
+| # | File | Fix | Source |
+|---|------|-----|--------|
+| 17 | [ProjectSettings.asset](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/ProjectSettings/ProjectSettings.asset) | **Disabled multithreaded rendering** (`m_MTRendering: 0`, `mobileMTRendering.Android: 0`) | ARCore docs: "Disable Multithreaded Rendering — not supported" |
+| 18 | [ProjectSettings.asset](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/ProjectSettings/ProjectSettings.asset) | Added **camera usage description** for AR | Required for camera permission on Android 10+ |
+| 19 | [ProjectSettings.asset](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/ProjectSettings/ProjectSettings.asset) | Set `activeInputHandler: 2` (Both old + new Input System) | Required for `com.unity.inputsystem` compatibility |
+| 20 | [EditorBuildSettings.asset](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/ProjectSettings/EditorBuildSettings.asset) | **Created** — sets ARScene as default build scene | Required for Unity to include scene in AAR export |
+| 21 | [AutoSnapEngine.cs](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Scripts/SceneManipulation/AutoSnapEngine.cs) | Added **[ApplyAutoSnap()](file:///c:/Users/apurv/Desktop/AWS%20Proto/unity_project/Assets/Scripts/SceneManipulation/AutoSnapEngine.cs#50-79)** method | Was called by bridge but didn't exist |
+
+> [!NOTE]
+> Existing config already correct: `AndroidMinSdkVersion: 24` ✅, `AndroidTargetArchitectures: 255` (all) ✅, Graphics APIs set to OpenGLES3 with `m_Automatic: 0` (no Vulkan) ✅, `ScriptingBackend` uses IL2CPP by default ✅.
+
+---
+
+## Final Unity Project Structure (14 files)
+
+```
+unity_project/
+├── Assets/
+│   ├── Prefabs/
+│   │   └── AR Plane.prefab
+│   ├── Scenes/
+│   │   └── ARScene.unity
+│   ├── Scripts/
+│   │   ├── AR/ARSceneManager.cs
+│   │   ├── Bridge/AndroidToUnityBridge.cs
+│   │   └── SceneManipulation/
+│   │       ├── AutoSnapEngine.cs
+│   │       └── SceneMutator.cs
+│   └── Settings/
+│       ├── AR_URP_Asset.asset
+│       └── AR_URP_Renderer.asset
+├── Packages/
+│   └── manifest.json
+└── ProjectSettings/
+    ├── EditorBuildSettings.asset
+    ├── GraphicsSettings.asset
+    ├── ProjectSettings.asset
+    ├── QualitySettings.asset
+    └── XRGeneralSettingsPerBuildTarget.asset
+```
+
+## Manual Steps After Opening in Unity Editor
+
+1. Let Unity regenerate `.meta` files and import packages
+2. Re-assign C# scripts to scene GameObjects in Inspector
+3. Set AR Plane prefab on ARPlaneManager component
+4. Verify `Edit > Project Settings > XR Plug-in Management` → ARCore checked
+5. Export as AAR → copy to `app/libs/`

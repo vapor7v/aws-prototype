@@ -4,13 +4,13 @@ package com.arinterior.engine.data.model
  * Structured design intent extracted by Bedrock from a user prompt.
  */
 data class DesignIntent(
-    val style: String,
-    val palette: Palette,
-    val objects: List<ObjectRequest>,
-    val wallTreatment: WallTreatment,
-    val wallDecor: List<WallDecorRequest>,
-    val accentLighting: List<LightingRequest>,
-    val constraints: DesignConstraints
+    val style: String = "",
+    val palette: Palette? = null,
+    val objects: List<ObjectRequest>? = null,
+    val wallTreatment: WallTreatment? = null,
+    val wallDecor: List<WallDecorRequest>? = null,
+    val accentLighting: List<LightingRequest>? = null,
+    val constraints: DesignConstraints? = null
 )
 
 data class Palette(

@@ -1,188 +1,197 @@
 package com.arinterior.engine.ui.components
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.background
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arinterior.engine.data.model.AppState
-import kotlinx.coroutines.delay
 
 /**
- * Top status bar showing scan/ready/processing state.
+ * Scanning overlay — LIGHTWEIGHT version.
+ *
+ * The original version drew 144 animated dots with sin/cos per frame,
+ * which caused ARCore CPU starvation (VIO dropped to 5 Hz, never initialized).
+ *
+ * This version uses only simple Compose elements — no Canvas, no trigonometry,
+ * no heavy per-frame calculations. CPU cost is near zero.
  */
 @Composable
-fun StatusBar(
-    statusMessage: String,
-    appState: AppState,
+fun ScanningOverlay(
+    planeCount: Int,
+    floorDetected: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val bgColor = when (appState) {
-        AppState.SCANNING -> Color(0xCC1A1A2E)
-        AppState.READY -> Color(0xCC0A3D2E)
-        AppState.PROCESSING -> Color(0xCC2E1A0A)
-        AppState.DISPLAYING -> Color(0xCC0A2E3D)
-        AppState.EDITING -> Color(0xCC2E0A3D)
-        else -> Color(0xCC1A1A2E)
-    }
+    // Single lightweight animation: pulsing alpha for the instruction text
+    val infiniteTransition = rememberInfiniteTransition(label = "scan_pulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = EaseInOut),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
 
-    Box(
-        modifier = modifier
-            .padding(top = 12.dp, start = 16.dp, end = 16.dp)
-            .background(bgColor, RoundedCornerShape(20.dp))
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Text(
-            text = statusMessage,
-            fontSize = 13.sp,
-            color = Color.White,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-/**
- * Full-screen loading overlay during AI processing.
- */
-@Composable
-fun LoadingOverlay() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0x80000000)),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        // ─── Center: status indicator ────────────────────────
         Column(
+            modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            CircularProgressIndicator(
-                color = Color(0xFF00D4FF),
-                strokeWidth = 3.dp,
-                modifier = Modifier.size(48.dp)
-            )
+            // Scanning progress indicator (lightweight)
+            if (!floorDetected) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(48.dp),
+                    color = Color(0xFF00D4FF),
+                    strokeWidth = 3.dp
+                )
+            }
+
             Text(
-                text = "Designing your room...",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
+                text = if (floorDetected) "✓ Floor detected" else "Scanning…",
+                color = if (floorDetected) Color(0xFF4CAF50) else Color(0xFF00D4FF).copy(alpha = pulseAlpha),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        // ─── Bottom: instructions + plane count ──────────────
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 100.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Plane count chip
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Color.Black.copy(alpha = 0.5f)
+            ) {
+                Text(
+                    text = if (planeCount > 0) "Surfaces found: $planeCount" else "Searching for surfaces…",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = if (planeCount > 0) Color(0xFF4CAF50) else Color.White.copy(alpha = 0.7f),
+                    fontSize = 14.sp
+                )
+            }
+
+            // Motion hint
+            Text(
+                text = "Point at the floor and move slowly",
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center
             )
         }
     }
 }
 
-/**
- * Voice feedback chip shown after voice command is processed.
- */
+// ──────────────────────────────────────────────────────────────
+// Existing overlay components below
+// ──────────────────────────────────────────────────────────────
+
+@Composable
+fun StatusBar(
+    status: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = Color.Black.copy(alpha = 0.6f)
+    ) {
+        Text(
+            text = status,
+            modifier = Modifier.padding(12.dp),
+            color = Color.White,
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun LoadingOverlay(
+    message: String = "Processing…",
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color.Black.copy(alpha = 0.7f)
+        ) {
+            Column(
+                modifier = Modifier.padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                CircularProgressIndicator(
+                    color = Color(0xFF00D4FF)
+                )
+                Text(
+                    text = message,
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun VoiceFeedbackChip(
     text: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        color = Color(0xFF00D4FF).copy(alpha = 0.15f)
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            color = Color(0xFF00D4FF),
+            fontSize = 13.sp
+        )
+    }
+}
+
+@Composable
+fun OnboardingDialog(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Auto-dismiss after 2 seconds
-    LaunchedEffect(text) {
-        delay(2000)
-        onDismiss()
-    }
-
-    AnimatedVisibility(
-        visible = true,
-        enter = slideInVertically() + fadeIn(),
-        exit = slideOutVertically() + fadeOut(),
-        modifier = modifier
-    ) {
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = Color(0xCC0A3D2E),
-            tonalElevation = 4.dp
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Check,
-                    contentDescription = null,
-                    tint = Color(0xFF00D4FF),
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = text,
-                    fontSize = 13.sp,
-                    color = Color.White
-                )
-            }
-        }
-    }
-}
-
-/**
- * First-time onboarding dialog.
- */
-@Composable
-fun OnboardingDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Welcome to AR Interior Engine",
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OnboardingStep("1", "Point camera at the floor and walls")
-                OnboardingStep("2", "Type a prompt: \"Modern living room with sage green walls\"")
-                OnboardingStep("3", "Browse design candidates and explore in AR")
-                OnboardingStep("4", "Use voice commands: \"Move the sofa left\"")
-            }
-        },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Got it!", color = Color(0xFF00D4FF))
+                Text("Got it")
             }
         },
-        containerColor = Color(0xFF1A1A2E),
-        titleContentColor = Color.White,
-        textContentColor = Color(0xCCFFFFFF)
-    )
-}
-
-@Composable
-private fun OnboardingStep(number: String, description: String) {
-    Row(
-        verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = Color(0xFF00D4FF),
-            modifier = Modifier.size(24.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = number,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-            }
+        title = { Text("How to use") },
+        text = {
+            Text(
+                "1. Point your camera at the floor\n" +
+                "2. Move slowly to scan the room\n" +
+                "3. Describe what you want or tap to select\n" +
+                "4. AI will generate design options"
+            )
         }
-        Text(
-            text = description,
-            fontSize = 14.sp,
-            color = Color(0xCCFFFFFF)
-        )
-    }
+    )
 }

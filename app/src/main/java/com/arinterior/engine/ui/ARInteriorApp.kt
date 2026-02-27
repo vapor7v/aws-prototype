@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.arinterior.engine.data.model.AppState
 import com.arinterior.engine.ui.components.*
@@ -30,6 +31,8 @@ fun ARInteriorApp(
     val isProcessing by arViewModel.isProcessing.collectAsState()
     val errorMessage by arViewModel.errorMessage.collectAsState()
     val roomGeometry by arViewModel.roomGeometry.collectAsState()
+    val floorDetected by arViewModel.floorDetected.collectAsState()
+    val planeCount by arViewModel.planeCount.collectAsState()
 
     // Voice state
     var voiceFeedback by remember { mutableStateOf<String?>(null) }
@@ -61,17 +64,39 @@ fun ARInteriorApp(
             selectedCandidate = selectedCandidate,
             onFloorDetected = { arViewModel.onFloorDetected() },
             onWallDetected = { arViewModel.onWallDetected() },
-            onObjectTapped = { arViewModel.onEditingStarted() }
+            onObjectTapped = { arViewModel.onEditingStarted() },
+            onPlaneCountChanged = { arViewModel.onPlaneCountChanged(it) }
         )
+
+        // ─── Scanning Overlay (animated dots + crosshair) ─
+        if (appState == AppState.SCANNING) {
+            ScanningOverlay(
+                planeCount = planeCount,
+                floorDetected = floorDetected
+            )
+        }
 
         // ─── Status Bar (Top) ────────────────────────────
         StatusBar(
-            statusMessage = statusMessage,
-            appState = appState,
+            status = statusMessage,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
         )
+
+        // ─── Retry Scan Button ───────────────────────────
+        // Shown when scanning timed out (READY but no floor detected)
+        if (appState == AppState.READY && !floorDetected) {
+            TextButton(
+                onClick = { arViewModel.onRetryScan() },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(16.dp)
+            ) {
+                Text("\uD83D\uDD04 Retry Scan", color = MaterialTheme.colorScheme.primary)
+            }
+        }
 
         // ─── Loading Overlay ─────────────────────────────
         if (isProcessing) {
@@ -95,7 +120,6 @@ fun ARInteriorApp(
         voiceFeedback?.let { feedback ->
             VoiceFeedbackChip(
                 text = feedback,
-                onDismiss = { voiceFeedback = null },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 100.dp)
@@ -122,7 +146,8 @@ fun ARInteriorApp(
                         text = transcribedText,
                         onSuccess = { command ->
                             voiceFeedback = "${command.action} ${command.target} ✓"
-                            // Apply command to scene via SceneMutator
+                            // Forward parsed command to Unity for scene manipulation
+                            arViewModel.applyVoiceCommand(command)
                         },
                         onError = { voiceFeedback = "Didn't catch that" }
                     )
